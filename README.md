@@ -18,3 +18,14 @@ refresh the page, wait a bit for the menu to appear.
 
 The Calendar API has methods that can be used to put metadata into entries -
 setTag(key, value) and getTag(key).  RUSA=True
+
+## Google Documentation Links
+
+https://developers.google.com/apps-script/articles/vacation-calendar
+
+https://developers.google.com/apps-script/reference/calendar/calendar-app#createCalendar(String,Object)
+
+Basics of manipulating sheets.
+
+https://developers.google.com/apps-script/articles/tutorials
+
