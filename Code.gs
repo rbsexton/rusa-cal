@@ -48,13 +48,18 @@ function addCalendar(sheet, data, table_line_number) {
     let cellno = 'D' + (table_line_number + 1)
     var cell = sheet.getRange(cellno);
 
-    // cell.setValue('Hello2')
+    let short = data[table_line_number][2]
+    let details = `RUSA Sanctioned brevets for ` + data[table_line_number][0]
+    var calendar = CalendarApp.createCalendar(short, { summary: details });
+
+    Logger.log('Created the calendar "%s", with the ID "%s".',
+      calendar.getName(), calendar.getId());
+
+    cell.setValue(calendar.getId())
 
   } else {
    Logger.log('Configuration entry not complete' + data[table_line_number][1]);
   }
-
-
 }
 
 
