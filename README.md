@@ -29,3 +29,4 @@ Basics of manipulating sheets.
 
 https://developers.google.com/apps-script/articles/tutorials
 
+https://developers.google.com/apps-script/guides/sheets
