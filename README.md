@@ -13,3 +13,8 @@ https://docs.google.com/spreadsheets/d/1eJ8SycpD4vhPlK04vFBPmf8-nf50qavimlG0lgHg
 
 You can create a custom menu that runs onOpen().   Its all a bit slow.   After you 
 refresh the page, wait a bit for the menu to appear.
+
+## API
+
+The Calendar API has methods that can be used to put metadata into entries -
+setTag(key, value) and getTag(key).  RUSA=True
