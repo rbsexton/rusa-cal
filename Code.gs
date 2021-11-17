@@ -1,15 +1,11 @@
-function myFunction() {
+function processConfigSheet() {
   "use strict"
   var sheet = SpreadsheetApp.getActiveSheet();
   var data = sheet.getDataRange().getValues();
-  for (var i = 2; i < data.length; i++) {
-    let complete = ( data[i][0] != "" )
-    complete = complete && ( data[i][1] != "" )
-    complete = complete && ( data[i][2] != "" )
-
-    if ( complete && data[i][3] == "") {
-      Logger.log('Ready for add: Short Name: ' + data[i][2] );
-      data[i][3] = "Place-Holder"
+  let rows = data.length
+  for (var i = 2; i < rows; i++) {
+    if ( data[i][3] == "") {
+      addCalendar(sheet, data, i);
     } else {
       cleanCalendar(data[i][3])
       // Logger.log('Region ' + data[i][0] + ' Missing a calendar');
@@ -17,26 +13,50 @@ function myFunction() {
   }
 }
 
-// Pass in a calendar ID and clean out the unmodified 
-// entries.
+//
+// Pass in a calendar ID and clean out the unmodified entries.
+//
 function cleanCalendar(cal_id) {
-
   var calendar = CalendarApp.getCalendarById(cal_id);
-  if ( calendar != undefined ) {
-    Logger.log('Cleaning ' + cal_id);
-    Logger.log('The calendar is named "%s".', calendar.getName());
-  } else {
+  if ( calendar == undefined ) {
     Logger.log('Could not find ' +  cal_id);
     return
+  } else { // Do Calendar work
+    // This is in ms
+    let now      = new Date();
+    let thisyear = new Date(now.getTime() + (500 * 86400 * 1000));
+    let events = calendar.getEvents(now, thisyear);
+    Logger.log('Calendar ' + calendar.getName() + " events: " + events.length);
   }
+}
 
-  let now      = new Date();
-  
-  // This is in ms
-  let thisyear = new Date(now.getTime() + (500 * 86400 * 1000));
-  let events = calendar.getEvents(now, thisyear);
-  Logger.log('Number of events: ' + events.length);
+// 
+// Add a missing calendar.  
+// 
+function addCalendar(sheet, data, table_line_number) {
+    Logger.log('Evaluating Line ' + table_line_number);
+
+    data[table_line_number][3] = "Place-Holder"
+
+    let complete = ( data[table_line_number][0] != "" )
+    complete = complete && ( data[table_line_number][1] != "" )
+    complete = complete && ( data[table_line_number][2] != "" )
+
+  if ( complete ) {
+    Logger.log('Creating calendar for region ' + data[table_line_number][1]);
+
+    let cellno = 'D' + (table_line_number + 1)
+    var cell = sheet.getRange(cellno);
+
+    // cell.setValue('Hello2')
+
+  } else {
+   Logger.log('Configuration entry not complete' + data[table_line_number][1]);
+  }
 
 
 }
+
+
+
 
