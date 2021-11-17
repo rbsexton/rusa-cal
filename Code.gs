@@ -27,6 +27,16 @@ function cleanCalendar(cal_id) {
     Logger.log('The calendar is named "%s".', calendar.getName());
   } else {
     Logger.log('Could not find ' +  cal_id);
-
+    return
   }
+
+  let now      = new Date();
+  
+  // This is in ms
+  let thisyear = new Date(now.getTime() + (500 * 86400 * 1000));
+  let events = calendar.getEvents(now, thisyear);
+  Logger.log('Number of events: ' + events.length);
+
+
 }
+
