@@ -303,10 +303,6 @@ function RUSAEventDuration(RUSAEvent) {
   return days 
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 // --------------------------------------------------------------
 // Event Creation
 // This is the place to use try/catch and exponential back-off.
@@ -468,4 +464,9 @@ function entrySanityCheck(row) {
     if ( defined ) return 0
     else return -1
 }
+
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
+
