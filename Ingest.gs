@@ -29,8 +29,10 @@ const region2calendar   = new Map()
 const RUSA_events_by_id = new Map()
 const gCal_events_by_id = new Map()
 
-var count_deletions = 0 
-var count_additions = 0
+var count_gcal_scanned   = 0
+var count_gcal_processed = 0
+
+var count_additions    = 0
 
 // ---------------------------------------------------------------------------
 // Entry point for automated processing
