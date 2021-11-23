@@ -38,17 +38,24 @@ var count_additions    = 0
 // Entry point for automated processing
 // ---------------------------------------------------------------------------
 function scheduledProcess() {
-  var return_code
-  
-  return_code  = preflight()
+
+  let return_code = preflight()
 
   // Need better error processing here
-  if ( return_code != 0 ) {
+  if ( return_code != null ) {
     Logger.log('Error: preflight() failed with error ' + return_code);
-    return(return_code) 
+    return return_code  
   }
 
-  processEvents(RUSA_events_by_id,gCal_events_by_id)
+  return_code = processEvents(RUSA_events_by_id,gCal_events_by_id)
+  if ( return_code != null ) { 
+    Logger.log('Error: processEvents() failed with error ' + return_code)
+    return return_code  
+  }
+  
+  const message = `Done.  Examined ${count_gcal_scanned} GCal Items, Processed ${count_gcal_processed}`
+  Logger.log(message);
+
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +69,7 @@ function preflight() {
   var return_code
   
   return_code = populateMaps()
-  if ( return_code != "" ) {
+  if ( return_code !== null ) {
     Logger.log('Error: populateMaps() failed: ' + return_code);
     return(return_code)
   } 
@@ -70,7 +77,7 @@ function preflight() {
   httpGetEvents()
 
   return_code = checkForRegionCalendars(RUSA_events_by_id)
-  if ( return_code != "" ) {
+  if ( return_code !== null ) {
     const message = 'Error: checkForRegionCalendars() failed: ' + return_code
     Logger.log(message)
     return(message)
@@ -78,7 +85,7 @@ function preflight() {
 
   gcalGetAllEvents() 
 
-  return("") // Success
+  return null // Success
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +132,7 @@ function populateMaps() {
     Logger.log('Region ' + key + ' is calendar ' + region2calendar.get(key).getName() );
 
   }
-  return("")
+  return(null)
 }
 
 
@@ -215,7 +222,7 @@ function checkForRegionCalendars(RUSA_events_by_id) {
     } 
   }
   Logger.log('Found calendars for all regions in the data ');
-  return("")
+  return(null)
 }
 
 // ---------------------------------------------------------------------------
