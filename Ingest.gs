@@ -23,11 +23,11 @@ const url = "https://rusa.org/cgi-bin/eventsearch_PF.pl?output_format=json&throu
 // ---------------------------------------------------------------------------
 // Maps & Work Data - Globals, sadly.
 // ---------------------------------------------------------------------------
-const region2shortname  = new Map()
-const region2calendar   = new Map()
+const MapRegion2ShortName  = new Map()
+const MapRegion2Calendar   = new Map()
 
-const RUSA_events_by_id = new Map()
-const gCal_events_by_id = new Map()
+const MapRUSAEventsByID    = new Map()
+const MapgCalEventsByID    = new Map()
 
 var count_gcal_scanned   = 0
 var count_gcal_processed = 0
@@ -47,7 +47,7 @@ function scheduledProcess() {
     return return_code  
   }
 
-  return_code = processEvents(RUSA_events_by_id,gCal_events_by_id)
+  return_code = processEvents(MapRUSAEventsByID,MapgCalEventsByID)
   if ( return_code != null ) { 
     Logger.log('Error: processEvents() failed with error ' + return_code)
     return return_code  
@@ -76,7 +76,7 @@ function preflight() {
   
   httpGetEvents()
 
-  return_code = checkForRegionCalendars(RUSA_events_by_id)
+  return_code = checkForRegionCalendars(MapRUSAEventsByID)
   if ( return_code !== null ) {
     const message = 'Error: checkForRegionCalendars() failed: ' + return_code
     Logger.log(message)
@@ -107,7 +107,7 @@ function populateMaps() {
     } 
 
     // Recall that these should be unique by region
-    if ( region2shortname.has(data[i][0]) ) {
+    if ( MapRegion2ShortName.has(data[i][0]) ) {
     const message = 'Error: Region ' + data[i][0] + ' already defined at spreadsheet line ' + ( i + 1 )
     return(message)
     }
@@ -116,7 +116,7 @@ function populateMaps() {
     let key = data[i][0]
 
     // ----------- Short Name ---------------
-    region2shortname.set(key,data[i][1]) 
+    MapRegion2ShortName.set(key,data[i][1]) 
     Logger.log('Region ' + key + ' shortname is ' + data[i][1] );
 
     // ----------- Calendar -----------------
@@ -128,8 +128,8 @@ function populateMaps() {
       return(message)
     } 
 
-    region2calendar.set(key, calendar)
-    Logger.log('Region ' + key + ' is calendar ' + region2calendar.get(key).getName() );
+    MapRegion2Calendar.set(key, calendar)
+    Logger.log('Region ' + key + ' is calendar ' + MapRegion2Calendar.get(key).getName() );
 
   }
   return(null)
@@ -151,11 +151,11 @@ function httpGetEvents() {
   .forEach(event => {
      const event_id = event["event_id"]
       if ( event_id != undefined ) {
-        RUSA_events_by_id.set(event_id,event)
+        MapRUSAEventsByID.set(event_id,event)
       }
   })
   
-  return(RUSA_events_by_id)
+  return(MapRUSAEventsByID)
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +167,7 @@ function gcalGetAllEvents() {
   let thisyear = new Date(now.getTime() + (500 * 86400 * 1000));
 
   // Iterate through the maps and clean everything in there.  
-  const iterator = region2calendar[Symbol.iterator]();
+  const iterator = MapRegion2Calendar[Symbol.iterator]();
 
   for (const calendar of iterator) {
       const CalendarID = calendar[1]; // [1] doesn't seem correct but it works.
@@ -197,7 +197,7 @@ function gcalPreProcessCalendar(CalendarID) {
     if ( ev.getTag('RUSAGenerated') == 'True' ) {
       const event_id_rusa = ev.getTag('event_id')
       if ( event_id_rusa != undefined ) {
-        gCal_events_by_id.set(event_id_rusa, ev)
+        MapgCalEventsByID.set(event_id_rusa, ev)
         count_gcal_processed++
         const message = 'Checking for updates ' + ev.getTitle()
         Logger.log(message);
@@ -214,11 +214,11 @@ function gcalPreProcessCalendar(CalendarID) {
 // that there is a calendar for every region in the data set 
 // Return 0 for success 
 // ---------------------------------------------------------------------------
-function checkForRegionCalendars(RUSA_events_by_id) {
-  const event_count = RUSA_events_by_id.length
+function checkForRegionCalendars(MapRUSAEventsByID) {
+  const event_count = MapRUSAEventsByID.length
   for (var i = 0; i < event_count; i++) {
-    const region = RUSA_events_by_id[i].region
-    if ( !region2shortname.has(region )) {
+    const region = MapRUSAEventsByID[i].region
+    if ( !MapRegion2ShortName.has(region )) {
       const message = "Region " + region + " is in the RUSA data, but has no google calendar"
       Logger.log(message);
       return message
@@ -241,7 +241,7 @@ function EventTitle(RUSAevent) {
   const regex1 = / \d+[Kk]*[Mm]* [Bb]revet/
   const regex2 = / \d+[Kk]*[Mm]*$/
 
-  var title = region2shortname.get(RUSAevent["region"]) + ' '
+  var title = MapRegion2ShortName.get(RUSAevent["region"]) + ' '
   title    += RUSAevent["dist"] + ' '
 
   // Check for cancelled events.
@@ -420,8 +420,8 @@ function processEvents(rusa_events, gcal_events) {
     // Figure out what to do.    Start by determining whether or not 
     // there is a corresponding gCal event
     const ev_rusa_id = "" +  ev_rusa["event_id"] // stringify this.
-    const ev_gcal    = gCal_events_by_id.get(ev_rusa_id)  
-    const cal_id     = region2calendar.get(ev_rusa["region"])
+    const ev_gcal    = MapgCalEventsByID.get(ev_rusa_id)  
+    const cal_id     = MapRegion2Calendar.get(ev_rusa["region"])
 
     // If there is no gcal event, go ahead an create the event.
     // if there is a google event, figure out if they are different,
@@ -433,9 +433,9 @@ function processEvents(rusa_events, gcal_events) {
       if ( RUSAisDifferent(title,startDate,days,ev_gcal) ) {
        Logger.log('Updating Calendar entry ' + title );
         ev_gcal.deleteEvent()
-        gCal_events_by_id.delete(ev_rusa_id)
+        MapgCalEventsByID.delete(ev_rusa_id)
         const ev_id = CreateGCalEntry(cal_id,title,startDate,days,ev_rusa_id)
-        gCal_events_by_id.set(ev_rusa_id,ev_id)
+        MapgCalEventsByID.set(ev_rusa_id,ev_id)
       }
       else { 
         const message = 'No Changes: ' + title
