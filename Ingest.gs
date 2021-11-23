@@ -170,8 +170,8 @@ function gcalGetAllEvents() {
   const iterator = region2calendar[Symbol.iterator]();
 
   for (const calendar of iterator) {
-      const cal_id = calendar[1]; // [1] doesn't seem correct but it works.
-      gcalPreProcessCalendar(cal_id)
+      const CalendarID = calendar[1]; // [1] doesn't seem correct but it works.
+      gcalPreProcessCalendar(CalendarID)
     }
   }
 
@@ -180,22 +180,25 @@ function gcalGetAllEvents() {
 // Pull all of the calendar entries out of gCal and keep the ones that 
 // were added by this script or are otherwise unchanged.
 // ---------------------------------------------------------------------------
-function gcalPreProcessCalendar(calendar) {
+function gcalPreProcessCalendar(CalendarID) {
   // This is in ms
-  let now      = new Date();
-  let thisyear = new Date(now.getTime() + (500 * 86400 * 1000));
-  let events = calendar.getEvents(now, thisyear);
+  let now        = new Date();
+  let thisyear   = new Date(now.getTime() + (500 * 86400 * 1000));
+  let event_list = CalendarID.getEvents(now, thisyear);
 
   // Logger.log('Calendar ' + calendar.getName() + " events: " + events.length);
-  const rows = events.length
-  for (var i = 0; i < rows; i++) {
-    const ev = events[i]
+  const event_count = event_list.length
+  count_gcal_scanned += event_count
+
+  for (var i = 0; i < event_count; i++) {
+    const ev = event_list[i]
     // Test Number one:  Does it have RUSA=Yes metadata?
     // If it does, check for a event_id tag.
     if ( ev.getTag('RUSAGenerated') == 'True' ) {
       const event_id_rusa = ev.getTag('event_id')
       if ( event_id_rusa != undefined ) {
         gCal_events_by_id.set(event_id_rusa, ev)
+        count_gcal_processed++
         const message = 'Checking for updates ' + ev.getTitle()
         Logger.log(message);
       }
@@ -238,15 +241,15 @@ function EventTitle(RUSAevent) {
   const regex1 = / \d+[Kk]*[Mm]* [Bb]revet/
   const regex2 = / \d+[Kk]*[Mm]*$/
 
-  var title
-  title  = region2shortname.get(RUSAevent["region"]) + ' '
-  title += RUSAevent["dist"] + ' '
+  var title = region2shortname.get(RUSAevent["region"]) + ' '
+  title    += RUSAevent["dist"] + ' '
 
   // Check for cancelled events.
   if ( (RUSAevent["cancelled"] !== undefined) ) {
     title = title + "CANCELLED "
   }
 
+  // Apply regular expressions to the name to shorten it.
   if ( RUSAevent["route_name"] !== undefined ) {
     let clean_name = RUSAevent["route_name"];
     clean_name = clean_name.replace(regex1, "");
@@ -264,14 +267,14 @@ function EventTitle(RUSAevent) {
 function RUSAEventStartDate(rusa_event) {
   const rusa_date = rusa_event.date
   // Tear apart the date parts so they can be used in a constructor.
-  let [year, month, day] = rusa_date.split('/')
+  let [y, m, d] = rusa_date.split('/')
 
   // Javascript numbers months 0-11
-  month--
+  m--
 
   // Do everyting in PST, where midnight is 8am UT.
   const start_date = new Date(
-      Date.UTC(year, month, day, 8, 0, 0, 0 ))
+      Date.UTC(y, m, d, 8, 0, 0, 0 ))
 
   // Sanity check
   if ( start_date.getUTCHours() != 8 ) {
@@ -286,9 +289,9 @@ function RUSAEventStartDate(rusa_event) {
 // For all-day events, the duration as returned by the API 
 // is a minimum of one day.   So no special trickery.
 // --------------------------------------------------------------
-function RUSAEventDuration(rusa_event) {
+function RUSAEventDuration(RUSAEvent) {
 
-  const d = rusa_event.dist
+  const d = RUSAEvent.dist
 
   if ( d == 360 ) return 2  // Fleches ( Special case) 
   if ( d <= 400 ) return 1 
@@ -365,29 +368,31 @@ async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
 //
 // return Null on succees, a string otherwise.
 // --------------------------------------------------------------
-function RUSAisDifferent(title,startDate,days, gcal_ev) {
+function RUSAisDifferent(title,startDate,days, GCalEvent) {
 
   // Start with the title.
-  if ( title != gcal_ev.getTitle() ) {
+  if ( title != GCalEvent.getTitle() ) {
     return true 
   }
 
   // So it turns out that date comparision is a little tricky.
   // https://stackoverflow.com/questions/11174385/compare-two-dates-google-apps-script
-  const begin_gc = gcal_ev.getAllDayStartDate();
-  const gcal     = begin_gc.toDateString()
+  // So it turns out that GCal does interesting things with all day event start dates
+  // Basically, it localizes to local midnight.   When you include daylight savings,
+  // it gets even more crazy.   So work around this by comparing the dates only, in text form
+  const GCalStartDate = GCalEvent.getAllDayStartDate();
+  const GCalStart     = GCalStartDate.toDateString()
+  const RUSAStart     = startDate.toDateString()
 
-  const rusa = startDate.toDateString()
-  if ( rusa != gcal ) {
+  if ( RUSAStart != GCalStart ) {
     return true 
   }
 
-  const end_ms   = startDate.getTime() + (86400 * 1000  * days)
-  const endDate  = new Date(end_ms)
-
-  const end_gs = gcal_ev.getAllDayEndDate()
+  const endMS   = startDate.getTime() + (86400 * 1000  * days)
+  const endDate = new Date(endMS)
+  const endGCal = GCalEvent.getAllDayEndDate()
   
-  if ( endDate.toDateString() != end_gs.toDateString() ) {
+  if ( endDate.toDateString() != endGCal.toDateString() ) {
     return true 
   }
 
@@ -429,8 +434,7 @@ function processEvents(rusa_events, gcal_events) {
       Logger.log('Creating Calendar entry ' + title );
       CreateGCalEntry(cal_id,title,startDate,days,ev_rusa_id)
     } else {
-      const mismatch = RUSAisDifferent(title,startDate,days,ev_gcal)
-      if ( mismatch ) {
+      if ( RUSAisDifferent(title,startDate,days,ev_gcal) ) {
        Logger.log('Updating Calendar entry ' + title );
         ev_gcal.deleteEvent()
         gCal_events_by_id.delete(ev_rusa_id)
@@ -451,16 +455,17 @@ function processEvents(rusa_events, gcal_events) {
 // -------------------------------------------------------------------
 // -------------------------------------------------------------------
 
-// Make sure a line of the file is fully defined before using the data
+// Make sure a row of the file is fully defined before using the data
 // Return 0 for pass
-function entrySanityCheck(line) {
-    let c0 = line[0] != ""
-    let c1 = line[1] != ""
-    let c2 = line[2] != ""
-    let c3 = line[3] != ""
+function entrySanityCheck(row) {
+    let c0 = row[0] != ""
+    let c1 = row[1] != ""
+    let c2 = row[2] != ""
+    let c3 = row[3] != ""
 
     let defined = c0 && c1 && c2 && c3
 
     if ( defined ) return 0
-    else return(-1)
+    else return -1
+}
 }
