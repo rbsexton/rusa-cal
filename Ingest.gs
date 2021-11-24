@@ -69,7 +69,7 @@ function preflight() {
   var return_code
   
   return_code = populateMaps()
-  if ( return_code !== null ) {
+  if ( return_code != null ) {
     Logger.log('Error: populateMaps() failed: ' + return_code);
     return(return_code)
   } 
@@ -77,7 +77,7 @@ function preflight() {
   httpGetEvents()
 
   return_code = checkForRegionCalendars(MapRUSAEventsByID)
-  if ( return_code !== null ) {
+  if ( return_code != null ) {
     const message = 'Error: checkForRegionCalendars() failed: ' + return_code
     Logger.log(message)
     return(message)
@@ -225,7 +225,7 @@ function checkForRegionCalendars(MapRUSAEventsByID) {
     } 
   }
   Logger.log('Found calendars for all regions in the data ');
-  return(null)
+  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -258,7 +258,7 @@ function EventTitle(RUSAevent) {
     title += clean_name
   }
 
-  return(title)
+  return title 
 }
 
 // --------------------------------------------------------------
@@ -355,7 +355,7 @@ async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
 
   count_additions++
 
-  return(event_id)
+  return event_id 
 }
 
 // --------------------------------------------------------------
