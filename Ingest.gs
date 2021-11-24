@@ -187,11 +187,9 @@ function gcalPreProcessCalendar(CalendarID) {
   let event_list = CalendarID.getEvents(now, thisyear);
 
   // Logger.log('Calendar ' + calendar.getName() + " events: " + events.length);
-  const event_count = event_list.length
-  count_gcal_scanned += event_count
+  count_gcal_scanned += event_list.length
 
-  for (var i = 0; i < event_count; i++) {
-    const ev = event_list[i]
+  for ( const ev of event_list ) {
     // Test Number one:  Does it have RUSA=Yes metadata?
     // If it does, check for a event_id tag.
     if ( ev.getTag('RUSAGenerated') == 'True' ) {
@@ -215,9 +213,8 @@ function gcalPreProcessCalendar(CalendarID) {
 // Return 0 for success 
 // ---------------------------------------------------------------------------
 function checkForRegionCalendars(MapRUSAEventsByID) {
-  const event_count = MapRUSAEventsByID.length
-  for (var i = 0; i < event_count; i++) {
-    const region = MapRUSAEventsByID[i].region
+  for ( const tuple of MapRUSAEventsByID) {
+    const region = tuple[1].region
     if ( !MapRegion2ShortName.has(region )) {
       const message = "Region " + region + " is in the RUSA data, but has no google calendar"
       Logger.log(message);
