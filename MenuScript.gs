@@ -1,12 +1,35 @@
+//
+// onOpen() hook that gets run when the user 'opens' the 
+// sheet.   This takes a little while to get going.
+//
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   // Or DocumentApp or FormApp.
   ui.createMenu('Custom Menu')
-      .addItem('Rescan Table', 'menuItem2')
-      .addSeparator()
       .addItem('Pre-flight Check', 'IntegrityCheck')
+      .addItem('Create Calendars', 'processConfigSheet')
+      .addSeparator()
+      .addItem('Pre-check Automated Updates', 'preFlightWrapper')
       .addToUi();
 }
+
+// --------------------------------------------------------
+// Run preflight and verify that everything is ready to go.
+// --------------------------------------------------------
+function preFlightWrapper() {
+
+  let ret = preflight()
+  if ( ret == null ) {
+    ret = 'Checks pass.  Ready for automated updates'
+  }
+
+  // Fall out to success
+  SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
+  .alert(ret);
+
+
+}
+
 
 //
 // Do a basic verification that all the needed columns are filled in
