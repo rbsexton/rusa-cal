@@ -99,7 +99,7 @@ function populateMaps() {
   var sheet = SpreadsheetApp.getActiveSheet();
   var data = sheet.getDataRange().getValues();
   let rows = data.length
-  for (var i = 4; i < rows; i++) { // REMOVE BEFORE FLIGHT.  i = 2
+  for (var i = 2; i < rows; i++) { // REMOVE BEFORE FLIGHT.  i = 2
     if ( entrySanityCheck(data[i]) != 0 ) {
       const message = 'Bad Config entry at spreadsheet line ' + ( i + 1 )
       Logger.log(message);
