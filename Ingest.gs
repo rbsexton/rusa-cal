@@ -101,7 +101,21 @@ function populateMaps() {
   let rows = data.length
   for (var i = 2; i < rows; i++) { // REMOVE BEFORE FLIGHT.  i = 2
     if ( entrySanityCheck(data[i]) != 0 ) {
-      const message = 'Bad Config entry at spreadsheet line ' + ( i + 1 )
+      // Try to give them something more useful.
+      var message = 'Bad Config entry at spreadsheet line ' + ( i + 1 )
+
+      if ( data[i][0] == "" ) {
+        message += ' RUSA Region is blank'
+      }
+
+      if ( data[i][1] == "" || data[i][2] == "") {
+        message += ' Region short name(s) is/are blank'
+      }
+
+      if ( data[i][3] == "") {
+        message += ' No Calendar!  Did you run Create Calendars?'
+      }
+
       Logger.log(message);
       return(message)
     } 
