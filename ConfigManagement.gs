@@ -79,15 +79,14 @@ function addCalendar(sheet, data, table_line_number) {
 
 }
 
+// An unwrapped macro.  Return true if the spreadsheet is
+// filled out and ready for new items.
 function calendarRowPreAddReady(row) {
     let c0 = row[0] != ""
     let c1 = row[1] != ""
     let c2 = row[2] != ""
 
-    let defined = c0 && c1 && c2
-
-    if ( defined ) return 0
-    else return -1
+    return ( c0 && c1 && c2 )
 }
 
 

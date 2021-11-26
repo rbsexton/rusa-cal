@@ -6,7 +6,6 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   // Or DocumentApp or FormApp.
   ui.createMenu('Custom Menu')
-      .addItem('Pre-flight Check', 'IntegrityCheck')
       .addItem('Create Calendars', 'processConfigSheetWrapper')
       .addSeparator()
       .addItem('Pre-check Automated Updates', 'preFlightWrapper')
@@ -34,7 +33,16 @@ function preFlightWrapper() {
 // --------------------------------------------------------
 function processConfigSheetWrapper() {
 
-  let ret = processConfigSheet()
+  let ret = ConfigSheetIntegrityCheck()
+ // This should return a null on pass.
+  if ( ret !== null ) {
+    SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
+    .alert(ret);
+    return
+    }
+
+  // Keep going. 
+  ret = processConfigSheet()
   
   // This should return a null on pass.
   if ( ret === null ) {
@@ -44,13 +52,13 @@ function processConfigSheetWrapper() {
   // Fall out to success
   SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
   .alert(ret);
-
+  return 
 }
 
 //
 // Do a basic verification that all the needed columns are filled in
 //
-function IntegrityCheck() {
+function ConfigSheetIntegrityCheck() {
 
  "use strict"
   var sheet = SpreadsheetApp.getActiveSheet();
@@ -72,14 +80,16 @@ function IntegrityCheck() {
     } else {
     SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
       let rownumber = i + 1
-      .alert('Row ' + rownumber + ' is incomplete');
-      return
+      const message = 'Row ' + rownumber + ' is incomplete'
+      return message 
     }
   }
 
+  return null 
+ 
   // Fall out to success
-  SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
-  .alert('Everything looks good!');
+  //SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
+  //.alert('Everything looks good!');
 }
 
 function menuItem2() {
