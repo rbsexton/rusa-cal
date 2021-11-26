@@ -59,8 +59,7 @@ function addCalendar(sheet, data, table_line_number) {
     let short   = data[table_line_number][2]
     let details = 'Region' + data[table_line_number][0]
     var calendar = CalendarApp.createCalendar(short, {
-         summary: details,
-         color: CalendarApp.Color.BLUE });
+         summary: details });
 
     // TODO ADD ERROR CHECKING HERE 
     Logger.log('Created the calendar "%s", with the ID "%s".',
