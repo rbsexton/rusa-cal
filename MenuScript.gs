@@ -7,7 +7,7 @@ function onOpen() {
   // Or DocumentApp or FormApp.
   ui.createMenu('Custom Menu')
       .addItem('Pre-flight Check', 'IntegrityCheck')
-      .addItem('Create Calendars', 'processConfigSheet')
+      .addItem('Create Calendars', 'processConfigSheetWrapper')
       .addSeparator()
       .addItem('Pre-check Automated Updates', 'preFlightWrapper')
       .addToUi();
@@ -19,7 +19,7 @@ function onOpen() {
 function preFlightWrapper() {
 
   let ret = preflight()
-  if ( ret == null ) {
+  if ( ret === null ) {
     ret = 'Checks pass.  Ready for automated updates'
   }
 
@@ -27,9 +27,25 @@ function preFlightWrapper() {
   SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
   .alert(ret);
 
-
 }
 
+// --------------------------------------------------------
+// Process the config sheet after changes.
+// --------------------------------------------------------
+function processConfigSheetWrapper() {
+
+  let ret = processConfigSheet()
+  
+  // This should return a null on pass.
+  if ( ret === null ) {
+    ret = 'Done! Please run pre-flight tests'
+  }
+
+  // Fall out to success
+  SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
+  .alert(ret);
+
+}
 
 //
 // Do a basic verification that all the needed columns are filled in

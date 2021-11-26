@@ -15,7 +15,8 @@
 
 //
 // Process the Config sheet and add any missing calendars
-//
+// return null on success.
+
 function processConfigSheet() {
   "use strict"
   var sheet = SpreadsheetApp.getActiveSheet();
@@ -32,13 +33,16 @@ function processConfigSheet() {
       // Logger.log('Region ' + data[i][0] + ' Missing a calendar');
     }
   }
+
+  // Fall out and return null if its all good.
+  return return_code 
+
 }
 
 // -----------------------------------------------------------
 // Calendar Modification Code 
 // -----------------------------------------------------------
-
-// 
+ 
 // Add a missing calendar.  
 // Return null or an error message.
 function addCalendar(sheet, data, table_line_number) {
@@ -58,14 +62,21 @@ function addCalendar(sheet, data, table_line_number) {
          summary: details,
          color: CalendarApp.Color.BLUE });
 
+    // TODO ADD ERROR CHECKING HERE 
     Logger.log('Created the calendar "%s", with the ID "%s".',
       calendar.getName(), calendar.getId());
 
     cell.setValue(`=HYPERLINK("https://calendar.google.com/calendar/embed?src=${calendar.getId()}","${calendar.getId()}")`);
 
   } else {
-   Logger.log('Configuration entry not complete' + data[table_line_number][1]);
+    const message = 'Configuration entry not complete for ' + data[table_line_number][0]
+    Logger.log(message);
+    return message
   }
+
+  // Fall out to success
+  return null 
+
 }
 
 function calendarRowPreAddReady(row) {
