@@ -332,16 +332,20 @@ async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
   
   do { 
     try {
-      if ( days > 1 ) {
+      if ( days > 1 ) { // Multi-day events 
        event = calendar.createAllDayEvent(title, startDate, end_date,options)
-        Logger.log('Multi-day event ');
-       } 
-     else { 
+       if ( backoff_timer > 1 ) Logger.log('Backoff recovery - Created Multi-day event ' + title);
+       else Logger.log('Created Multi-day event ' + title);
+      } 
+     else {  // Single-day events 
        event = calendar.createAllDayEvent(title, startDate,options)      
+       if ( backoff_timer > 1 ) {
+         Logger.log('Backoff recovery - Created event ' + title);
+       } 
      }
     }
     catch (err) {
-      Logger.log("Back off!")
+      Logger.log(err + "Back off for " + backoff_timer + " second(s)")
       await sleep(backoff_timer * 1000)
       backoff_timer = backoff_timer * 2 // Exponential back-off 
     }

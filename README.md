@@ -30,3 +30,17 @@ Basics of manipulating sheets.
 https://developers.google.com/apps-script/articles/tutorials
 
 https://developers.google.com/apps-script/guides/sheets
+
+## Test Cases
+
+- Config Spreadsheet 
+     - Spot partially-filled out lines DONE 
+     - Create missing calendar Entries DONE 
+- Pre-flight from the Spreadsheet
+      - Spot uncreated calendars  DONE 
+      - Detect invalid calendars DONE
+      
+- Processing 
+       - See pre-flight, above.
+
+
