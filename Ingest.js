@@ -18,7 +18,8 @@
 // The Pre-flight check is steps 1 & 2 
 "use strict"
 
-const url = "https://rusa.org/cgi-bin/eventsearch_PF.pl?output_format=json&through=TN&apikey=QObG204g3DXqcoDEdClc"
+// const url = "https://rusa.org/cgi-bin/eventsearch_PF.pl?output_format=json&through=CA&apikey=QObG204g3DXqcoDEdClc"
+const url = "https://rusa.org/cgi-bin/eventsearch_PF.pl?output_format=json&apikey=QObG204g3DXqcoDEdClc"
 
 // ---------------------------------------------------------------------------
 // Maps & Work Data - Globals, sadly.
@@ -31,6 +32,7 @@ const MapgCalEventsByID    = new Map()
 
 var count_gcal_scanned   = 0
 var count_gcal_processed = 0
+var count_gcal_ignored   = 0
 
 var count_additions    = 0
 
@@ -98,7 +100,9 @@ function populateMaps() {
   "use strict"
   var sheet = SpreadsheetApp.getActiveSheet();
   var data = sheet.getDataRange().getValues();
-  let rows = data.length
+  let rows = data.length;
+  let bad_rows = 0
+
   for (var i = 2; i < rows; i++) { // REMOVE BEFORE FLIGHT.  i = 2
     if ( entrySanityCheck(data[i]) != 0 ) {
       // Try to give them something more useful.
@@ -131,7 +135,7 @@ function populateMaps() {
 
     // ----------- Short Name ---------------
     MapRegion2ShortName.set(key,data[i][1]) 
-    Logger.log('Region ' + key + ' shortname is ' + data[i][1] );
+    // Logger.log('Region ' + key + ' shortname is ' + data[i][1] );
 
     // ----------- Calendar -----------------
     let cal_id = data[i][3]
@@ -139,13 +143,21 @@ function populateMaps() {
     if ( calendar == undefined ) {
       const message = 'Could not find ' +  cal_id + ' at spreadsheet line ' + ( i + 1 )
       Logger.log(message);
-      return(message)
+      bad_rows = bad_rows + 1 
+      continue
+      // return(message)
     } 
 
     MapRegion2Calendar.set(key, calendar)
-    Logger.log('Region ' + key + ' is calendar ' + MapRegion2Calendar.get(key).getName() );
+    // Logger.log('Region ' + key + ' is calendar ' + MapRegion2Calendar.get(key).getName() );
 
   }
+
+  if ( bad_rows > 0 ) {
+      const message = 'Bad Entries in spreadsheet'
+      return(message)
+  }
+
   return(null)
 }
 
@@ -211,14 +223,16 @@ function gcalPreProcessCalendar(CalendarID) {
       if ( event_id_rusa != undefined ) {
         MapgCalEventsByID.set(event_id_rusa, ev)
         count_gcal_processed++
-        const message = 'Checking for updates ' + ev.getTitle()
-        Logger.log(message);
+        // const message = 'Checking for updates ' + ev.getTitle()
+        // Logger.log(message);
       }
     }  else {
+      count_gcal_ignored++
       const message = 'Ignoring: ' + ev.getTitle()
       Logger.log(message);
     }  
   }
+
 }
 
 // ---------------------------------------------------------------------------
@@ -227,14 +241,23 @@ function gcalPreProcessCalendar(CalendarID) {
 // Return 0 for success 
 // ---------------------------------------------------------------------------
 function checkForRegionCalendars(MapRUSAEventsByID) {
+  var bad_regions = 0
+
   for ( const tuple of MapRUSAEventsByID) {
     const region = tuple[1].region
     if ( !MapRegion2ShortName.has(region )) {
       const message = "Region " + region + " is in the RUSA data, but has no google calendar"
       Logger.log(message);
+      bad_regions = bad_regions + 1
       return message
     } 
   }
+
+  if ( bad_regions > 0 ) {
+      const message = "Did not find calendars for all regions."
+      return message
+  } 
+
   Logger.log('Found calendars for all regions in the data ');
   return null
 }
@@ -320,7 +343,7 @@ function RUSAEventDuration(RUSAEvent) {
 //
 // return the event ID.
 // --------------------------------------------------------------
-async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
+function CreateGCalEntry(calendar, title,startDate,days,event_id) {
 
   const end_ms   = startDate.getTime() + (86400 * 1000  * days)
   const end_date = new Date(end_ms)
@@ -332,22 +355,25 @@ async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
   
   do { 
     try {
-      if ( days > 1 ) { // Multi-day events 
-       event = calendar.createAllDayEvent(title, startDate, end_date,options)
-       if ( backoff_timer > 1 ) Logger.log('Backoff recovery - Created Multi-day event ' + title);
-       else Logger.log('Created Multi-day event ' + title);
+      if ( days > 1 ) {  event = calendar.createAllDayEvent(title, startDate, end_date,options) }
+      else            {  event = calendar.createAllDayEvent(title, startDate,options)  }
+
+      // If the code gets to here, it was a success.
+      if ( backoff_timer > 1 ) {
+         backoff_timer = backoff_timer / 2 // Exponential back-on.
+        }
+
+      if ( days > 1 ) { Logger.log(`Created Multi-day event ${title} with id ${event.getId()}` );               } 
+      else            { Logger.log(`Created event ${title} with id ${event.getId()}`); }
+
       } 
-     else {  // Single-day events 
-       event = calendar.createAllDayEvent(title, startDate,options)      
-       if ( backoff_timer > 1 ) {
-         Logger.log('Backoff recovery - Created event ' + title);
-       } 
-     }
-    }
     catch (err) {
+      console.error("Got an exception creating a calendar event");
+      backoff_timer = backoff_timer * 2 // Exponential back-off
       Logger.log(err + "Back off for " + backoff_timer + " second(s)")
-      await sleep(backoff_timer * 1000)
-      backoff_timer = backoff_timer * 2 // Exponential back-off 
+      Utilities.sleep(backoff_timer * 1000) 
+    } finally {
+      //console.log('inside the do loop');
     }
   } while ( event === null )
  
@@ -357,7 +383,11 @@ async function CreateGCalEntry(calendar, title,startDate,days,event_id) {
   // with the RUSA database.
   event.setTag('RUSAGenerated','True')
   event.setTag('event_id',event_id)
-  event.setTag('saved_etag', event.etag) // Most 
+  
+  // TBD - Correctly handle local modification.  
+  // using the etag is a chicken and egg problem.   Maybe the answer 
+  // is some sort of independent hash of the title and description.
+  // event.setTag('saved_etag', event.etag) // Most
 
   // Put some code here to read back the start time from the event that 
   // was just created and then throw an exception on mismatch.
@@ -438,12 +468,18 @@ function processEvents(rusa_events, gcal_events) {
     const ev_gcal    = MapgCalEventsByID.get(ev_rusa_id)  
     const cal_id     = MapRegion2Calendar.get(ev_rusa["region"])
 
+    let ret_ev_gcal  = undefined
+    
     // If there is no gcal event, go ahead an create the event.
     // if there is a google event, figure out if they are different,
     // and if so create a new entry.
     if ( ev_gcal === undefined ) {
       Logger.log('Creating Calendar entry ' + title );
-      CreateGCalEntry(cal_id,title,startDate,days,ev_rusa_id)
+      try {
+        ret_ev_gcal = CreateGCalEntry(cal_id,title,startDate,days,ev_rusa_id);
+      } catch (err) {
+        console.info(`caught error ${err} creating calendar entry`);
+      }
     } else {
       if ( RUSAisDifferent(title,startDate,days,ev_gcal) ) {
        Logger.log('Updating Calendar entry ' + title );
@@ -452,9 +488,10 @@ function processEvents(rusa_events, gcal_events) {
         const ev_id = CreateGCalEntry(cal_id,title,startDate,days,ev_rusa_id)
         MapgCalEventsByID.set(ev_rusa_id,ev_id)
       }
-      else { 
-        const message = 'No Changes: ' + title
-        Logger.log(message)
+      else {
+        ; 
+        // const message = 'No Changes: ' + title
+        // Logger.log(message)
       }
     }  
   }

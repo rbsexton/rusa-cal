@@ -6,9 +6,13 @@ function onOpen() {
   var ui = SpreadsheetApp.getUi();
   // Or DocumentApp or FormApp.
   ui.createMenu('Custom Menu')
-      .addItem('Create Calendars', 'processConfigSheetWrapper')
+      .addItem('Create any missing/new calendars', 'processConfigSheetWrapper')
       .addSeparator()
-      .addItem('Pre-check Automated Updates', 'preFlightWrapper')
+      .addItem('Verify that everything is ready to go (preflight)', 'preFlightWrapper')
+      .addSeparator()
+      .addItem('Manually update gCalendars from RUSA data', 'scheduledProcessWrapper')
+      .addSeparator()
+      .addItem('Delete all the calendars (for development only)', 'deleteAllCalendarsWrapper')
       .addToUi();
 }
 
@@ -53,6 +57,16 @@ function processConfigSheetWrapper() {
   SpreadsheetApp.getUi() // Or DocumentApp or FormApp.
   .alert(ret);
   return 
+}
+
+// create/updated calendar entries
+function scheduledProcessWrapper() {
+  scheduledProcess();
+}
+
+// for debugging
+function deleteAllCalendarsWrapper() {
+  deleteAllCalendars();
 }
 
 //
